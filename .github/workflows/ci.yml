@@ -31,3 +31,12 @@ jobs:
       - name: Run automated API tests
         run: |
           python -m pytest tests/ -v
+        
+      - name: Generate model performance charts
+        run: |
+          python src/visualize.py
+
+      - name: Verify generated charts
+        run: |
+          test -s results/figures/model_comparison.png
+          test -s results/figures/confusion_matrix.png
