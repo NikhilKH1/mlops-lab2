@@ -1,0 +1,16 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment and secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Generated ML models
+model/*.pkl
