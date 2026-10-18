@@ -1,4 +1,4 @@
-# MLOps Lab 2 — Enhanced FastAPI Model Serving
+# MLOps Lab 2: Enhanced FastAPI Model Serving
 
 A reproducible machine-learning workflow for **training, comparing, evaluating, and serving Iris classifiers** with scikit-learn and FastAPI. This is an extended version of the [course FastAPI lab](https://github.com/raminmohammadi/MLOps/tree/main/Labs/API_Labs/FastAPI_Labs) with additional MLOps features, automated tests, and GitHub Actions CI.
 
