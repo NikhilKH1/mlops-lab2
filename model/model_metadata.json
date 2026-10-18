@@ -1,0 +1,20 @@
+{
+    "model_version": "1.0.0",
+    "model_name": "Decision Tree",
+    "dataset": "Iris",
+    "trained_at": "2026-10-18T22:17:27.377282+00:00",
+    "accuracy": 0.9556,
+    "macro_f1": 0.9466,
+    "feature_names": [
+        "sepal_length",
+        "sepal_width",
+        "petal_length",
+        "petal_width"
+    ],
+    "class_names": [
+        "setosa",
+        "versicolor",
+        "virginica"
+    ],
+    "model_path": "model/iris_model.pkl"
+}
