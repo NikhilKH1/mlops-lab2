@@ -1,150 +1,298 @@
+# MLOps Lab 2 — Enhanced FastAPI Model Serving
 
----
-- Video Explanation: [FastAPI lab](https://www.youtube.com/watch?v=KReburHqRIQ&list=PLcS4TrUUc53LeKBIyXAaERFKBJ3dvc9GZ&index=4)
-- Blog: [FastAPI Lab-1](https://www.mlwithramin.com/blog/fastapi-lab1)
+A reproducible machine-learning workflow for **training, comparing, evaluating, and serving Iris classifiers** with scikit-learn and FastAPI. This is an extended version of the [course FastAPI lab](https://github.com/raminmohammadi/MLOps/tree/main/Labs/API_Labs/FastAPI_Labs) with additional MLOps features, automated tests, and GitHub Actions CI.
 
----
+## Project highlights
 
-## Overview
+- **Model comparison:** Decision Tree and Random Forest evaluated with 5-fold stratified cross-validation.
+- **Reproducible model selection:** Choose the algorithm with the highest mean cross-validation macro F1, then evaluate it on held-out data.
+- **Experiment tracking:** Save comparison scores, metrics, confusion matrix, training time, environment version, and training history.
+- **Enhanced inference API:** Single and batch predictions, species names, probability estimates, request validation, and model metadata.
+- **Automated quality checks:** pytest tests and GitHub Actions CI that retrains and tests the application.
+- **Performance reporting:** Generate a model comparison plot and confusion matrix directly from experiment results.
 
-In this Lab, we will learn how to expose ML models as APIs using [FastAPI](https://fastapi.tiangolo.com/) and [uvicorn](https://www.uvicorn.org/).
-1. **FastAPI**: FastAPI is a modern, fast (high-performance), web framework for building APIs with Python based on standard Python type hints.
-2. **uvicorn**: Uvicorn is an [Asynchronous Server Gateway Interface - ASGI](https://youtu.be/vKjCkeJGbNk) web server implementation for Python. It is often used to serve FastAPI aplications.
+## Architecture
 
-The workflow involves the following steps:
-1. Training a Decision Tree Classifier on Iris Dataset.
-2. Serving the trained model as an API using FastAPI and uvicorn.
-
-## Setting up the lab
-
-1. Create a virtual environment(e.g. **fastapi_lab1_env**).
-2. Activate the environment and install the required packages using `pip install -r requirements.txt`.
-
-### Project structure
-
-```
-mlops_labs
-└── fastapi_lab1
-    ├── assets/
-    ├── fastapi_lab1_env/
-    ├── model/
-    │   └── iris_model.pkl
-    ├── src/
-    │   ├── __init__.py
-    │   ├── data.py
-    │   ├── main.py
-    │   ├── predict.py
-    │   └── train.py
-    ├── README.md
-    └── requirements.txt
+```mermaid
+flowchart TD
+    A[Iris dataset] --> B[Reproducible train/test split]
+    B --> C[5-fold stratified cross-validation]
+    C --> D[Decision Tree]
+    C --> E[Random Forest]
+    D --> F[Select by mean macro F1]
+    E --> F
+    F --> G[Fit selected model on training split]
+    G --> H[Evaluate on held-out test split]
+    G --> I[Save iris_model.pkl]
+    H --> J[Metrics JSON and experiment history]
+    J --> K[Generate visualizations]
+    I --> L[FastAPI inference service]
+    J --> M[Model metadata endpoint]
+    N[GitHub Actions CI] --> O[Train + pytest + visualizations]
 ```
 
-Note:
-- **fastapi[all]** in **requirements.txt** will install optional additional dependencies for fastapi which contains **uvicorn** too.
+## Original lab vs. enhancements
 
-## Running the Lab
+| Course starter | This implementation |
+|---|---|
+| Train one Decision Tree classifier | Compare Decision Tree and Random Forest with cross-validation |
+| Save one model file | Save selected model, performance metrics, and model metadata |
+| Basic single-prediction API | Detailed predictions, batch inference, model information |
+| Basic request schema | Positive-valued feature validation and batch-size limits |
+| Manual endpoint checks | Automated API and error-path tests |
+| No CI pipeline | GitHub Actions runs training, tests, and plot generation |
+| No experiment charts | Model comparison chart and confusion matrix |
 
-1. First step is to train a Decision Tree Classifier(Although you have **`model/iris_model.pkl`** when you cloned from the repo, let's create a new model). To do this, move into **src/** folder with
-    ```bash
-    cd src
-    ```
-2. To train the Decision Tree Classifier, run:
-    ```bash
-    python train.py
-    ```
-3. To serve the trained model as an API, run:
-    ```bash
-    uvicorn app:main --reload
-    ```
-4. Testing endpoints - to view the documentation of your api model you can use [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) (or) [http://localhost:8000/docs](http://localhost:8000/docs) after you run you run your FastAPI app.
-    
-![API page](assets/docs.png)
-   
-You can also test out the results of your endpoints by interacting with them. Click on the dropdown button of your endpoint -> Try it out -> Fill the Request body -> Click on Execute button.
+## Results
 
-![API response](assets/api_response.png)
+These results are from the recorded local experiment using the Iris dataset and random seed `12`. Cross-validation results are measured on the training partition; the final test set is held out until the selected model is evaluated.
 
-- You can also use other tools like [Postman](https://www.postman.com/) for API testing.
+| Algorithm | 5-fold CV accuracy | 5-fold CV macro F1 |
+|---|---:|---:|
+| **Decision Tree** | **95.24%** | **95.50%** |
+| Random Forest | 92.38% | 92.77% |
 
-### FastAPI Syntax
+**Selected model:** Decision Tree (higher cross-validation macro F1).
 
-- The instance of FASTAPI class can be defined as:
-    ```bash
-    app = FastAPI()
-     ```
-- When you run a FastAPI application, you often pass this app instance to an ASGI server uvicorn. The server then uses the app instance to handle incoming web requests and send responses based on the routes and logic you’ve defined in your FastAPI application.
-- To run a FastAPI application, run:
-    ```
-    uvicorn main:app --reload
-    ```
-- In this command, **main** is the name of the Python file containing your app instance (without the .py extension), and **app** is the name of the instance itself. The **--reload** flag tells uvicorn to restart the server whenever code changes are detected, which is useful during development and should not be used in production.
-- All the functions which should be used as API should be prefixed by **@app.get("/followed_by_endpoint_name")** or **@app.post("/followed_by_endpoint_name")**. This particular syntax is used to define route handlers (which function should handle an incoming request based on the URL and HTTP method), which are the functions responsible for responding to client requests to a given endpoint.
-    1. **Decorator (@)**: This symbol is used to define a decorator, which is a way to dynamically add functionality to functions or methods. In FastAPI, decorators are used to associate a function with a particular HTTP method and path.
-    2. **App Instance (app)**: This represents an instance of the FastAPI class. It is the core of your application and maintains the list of defined routes, request handlers, and other configurations.
-    3. **HTTP Method (get, post, etc.)**: The HTTP method specifies the type of HTTP request the route will respond to. For example, get is used for retrieving data, and post is used for sending data to the server. FastAPI provides a decorator for each standard HTTP method, such as @app.put, @app.delete, @app.patch, and @app.options, allowing you to define handlers for different types of client requests. For detailed info refer to this webiste by [Mdn](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods).
-    4. **Path/Endpoint ("/endpoint_name")**: This is the URL path where the API will be accessible. When a client makes a request to this path using the specified HTTP method, FastAPI will execute the associated function and return the response.
-- Using **async** in FastAPI allows for non-blocking operations, enabling the server to handle other requests while waiting for I/O tasks, like database queries or model loading, to complete. This leads to improved concurrency and resource utilization, enhancing the application's ability to manage multiple simultaneous requests efficiently.
+| Final held-out test metric | Value |
+|---|---:|
+| Accuracy | **95.56%** |
+| Macro F1 | **94.66%** |
+| Final model fitting time | 0.0003 s |
 
-### Data Models in FastAPI
+> The fitting time measures only the final `.fit()` call, **not** cross-validation, preprocessing, or end-to-end training. Scores and runtimes can vary if the dataset split, software versions, or machine change.
 
-##### 1. IrisData class
+### Model comparison chart
 
-```python
-class IrisData(BaseModel):
-    petal_length: float
-    sepal_length:float
-    petal_width:float
-    sepal_width:float
+![Cross-validation comparison of Decision Tree and Random Forest](results/figures/model_comparison.png)
+
+### Confusion matrix
+
+![Held-out test confusion matrix of the selected classifier](results/figures/confusion_matrix.png)
+
+Both figures are generated from `results/latest_metrics.json` by `src/visualize.py`—they are not manually entered plots.
+
+## API demonstration screenshots
+
+### Swagger UI — enhanced endpoints
+
+The Swagger UI shows the five available routes, including the new detailed-prediction, batch-prediction, and metadata APIs.
+
+![FastAPI Swagger UI displaying the five endpoints](assets/screenshots/swagger-ui.png)
+
+### GitHub Actions — successful CI run
+
+The CI workflow installs dependencies, trains the model, executes automated tests, and verifies that charts are generated.
+
+![Successful GitHub Actions CI workflow](assets/screenshots/ci-success.png)
+
+> The screenshot filenames above must exist under `assets/screenshots/` for these images to render on GitHub.
+
+## Technology stack
+
+| Category | Tools |
+|---|---|
+| Machine learning | Python, scikit-learn, Iris dataset |
+| Serving | FastAPI, Uvicorn, Pydantic |
+| Model artifact | Joblib (`.pkl`) |
+| Experiment records | JSON and JSONL |
+| Visualizations | Matplotlib |
+| Tests | pytest, HTTPX, FastAPI TestClient |
+| Continuous integration | GitHub Actions |
+
+## Repository structure
+
+```text
+mlops-lab2/
+├── .github/workflows/ci.yml
+├── assets/screenshots/
+│   ├── swagger-ui.png
+│   └── ci-success.png
+├── model/
+│   ├── .gitkeep
+│   ├── model_metadata.json
+│   └── iris_model.pkl           # generated locally; not tracked in Git
+├── results/
+│   ├── latest_metrics.json
+│   ├── history.jsonl
+│   └── figures/
+│       ├── model_comparison.png
+│       └── confusion_matrix.png
+├── src/
+│   ├── data.py
+│   ├── main.py
+│   ├── predict.py
+│   ├── train.py
+│   └── visualize.py
+├── tests/test_api.py
+├── requirements.txt
+├── requirements-dev.txt
+└── README.md
 ```
 
-The **IrisData** class is a [Pydantic model](https://docs.pydantic.dev/latest/concepts/models/) which defines the expected structure of the data for a request body. When you use it as a type annotation for a route operation parameter, FastAPI will perform the following actions:
-- **Request Body Reading:** FastAPI will read the request body as JSON.
-- **Data Conversion:** It will convert the corresponding types, if necessary.
-- **Data Validation:** It will validate the data. If the data is invalid, it will return a 422 Unprocessable Entity error response with details about what was incorrect.
+## Quick start
 
-#### 2. IrisResponse class
+**Requirements:** Python 3.11 recommended, Git, and pip. Commands below use macOS/Linux syntax.
 
-```python
-class IrisResponse(BaseModel):
-    response:int
+### 1. Clone and install
+
+```bash
+git clone https://github.com/YOUR_USERNAME/mlops-lab2.git
+cd mlops-lab2
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
 ```
 
-The **IrisResponse** class is another Pydantic model that defines the structure of the response data for an endpoint. When you specify **response_model=IrisResponse** in a route operation, it tells FastAPI to:
-- **Serialize the Output**: Convert the output data to JSON format according to the IrisResponse model.
-- **Document the API**: Include the IrisResponse model in the generated API documentation, so API consumers know what to expect in the response.
+Replace `YOUR_USERNAME` with the username of the submitted GitHub repository. `requirements-dev.txt` also installs the application's dependencies.
 
----
+### 2. Train and evaluate models
 
-### FastAPI features
+From the project root:
 
-1. **Request Body Reading**: When a client sends a request to a FastAPI endpoint, the request can include a body with data. For routes that expect data (commonly POST, PUT, or PATCH requests), this data is often in JSON format. FastAPI automatically reads the request body by checking the Content-Type header, which should be set to application/json for JSON payloads.
-2. **Data Conversion**: Once the request body is read, FastAPI utilizes Pydantic models to parse the JSON data. Pydantic attempts to construct an instance of the specified model using the data from the request body. During this instantiation, Pydantic converts the JSON data into the proper Python data types as declared in the model.
-    - For instance, if the JSON object has a field like petal_length with a value of "5.1" (a string), and the model expects a float, Pydantic will transform the string into a float. If conversion isn't possible (say, the value was "five point one"), Pydantic will raise a validation error.
-3. **Data Validation**: Pydantic checks that all required fields are present and that the values are of the correct type, adhering to any constraints defined in the model (such as string length or number range). If the validation passes, the endpoint has a verified Python object to work with. If validation fails (due to missing fields, incorrect types, or constraint violations), FastAPI responds with a 422 Unprocessable Entity status. This response includes a JSON body detailing the validation errors, aiding clients in correcting their request data.
-4. **Error Handling**: Error handling in FastAPI can be effectively managed using the HTTPException class. HTTPException is used to explicitly signal an HTTP error status code and return additional details about the error. When an HTTPException is raised within a route, FastAPI will catch the exception and use its content to form the HTTP response.
-- **Instantiation**: The HTTPException class is instantiated with at least two arguments: status_code and detail. The status_code argument is an integer that represents the HTTP status code (e.g., 404 for Not Found, 400 for Bad Request). The detail argument is a string or any JSON-encodable object that describes the error.
-- **Response**: When an HTTPException is raised, FastAPI sends an HTTP response with the status code specified. The detail provided in the HTTPException is sent as the body of the response in JSON format.
-
-```python
-from fastapi import FastAPI, HTTPException
-
-app = FastAPI()
-
-@app.get("/items/{item_id}")
-async def read_item(item_id: int):
-    item = get_item_by_id(item_id)  # Hypothetical function to fetch an item
-    if item is None:
-        raise HTTPException(status_code=404, detail=f"Item with ID {item_id} not found")
-    return item
+```bash
+python src/train.py
 ```
 
-In this example, **get_item_by_id** is a function that retrieves an item based on its ID. If no item with the given ID is found, an HTTPException with a 404 Not Found status code is raised, and the detail message is customized to include the ID of the item that was not found.
+This will generate `model/iris_model.pkl`, `model/model_metadata.json`, `results/latest_metrics.json`, and an appended record in `results/history.jsonl`. The model binary is deliberately excluded from Git; **run training before starting the API on a fresh clone**.
 
-FastAPI will catch this exception and return a response with a 404 status code and a JSON body like this:
+### 3. Generate the figures
+
+```bash
+python src/visualize.py
+```
+
+Charts are saved under `results/figures/`.
+
+### 4. Run the API
+
+```bash
+cd src
+python -m uvicorn main:app --reload
+```
+
+Open the interactive docs at **http://127.0.0.1:8000/docs**. The `--reload` option is for local development only.
+
+### 5. Run automated tests
+
+Open a second terminal in the repository root with the virtual environment activated:
+
+```bash
+python -m pytest tests/ -v
+```
+
+The test client runs without a live Uvicorn server. A fresh checkout must have a trained model artifact before inference tests run; the CI workflow handles this by training first.
+
+## API reference
+
+| Method | Route | Function |
+|---|---|---|
+| `GET` | `/` | Basic health response |
+| `POST` | `/predict` | Original class-ID prediction (backwards compatible) |
+| `POST` | `/predict/detailed` | Species name and prediction confidence |
+| `POST` | `/predict/batch` | Detailed predictions for 1–100 samples |
+| `GET` | `/model/info` | Saved training and model metadata |
+
+### Single prediction
+
+`POST /predict`
 
 ```json
 {
-    "detail": "Item with ID 1 not found"
+  "sepal_length": 5.1,
+  "sepal_width": 3.5,
+  "petal_length": 1.4,
+  "petal_width": 0.2
 }
 ```
-- For more information on how to handle errors in FASTAPI refer to this [documentation](https://fastapi.tiangolo.com/tutorial/handling-errors/).
+
+Example response:
+
+```json
+{"response": 0}
+```
+
+Classes: `0 = setosa`, `1 = versicolor`, `2 = virginica`.
+
+### Detailed prediction
+
+`POST /predict/detailed` accepts the same request and returns a response in this format:
+
+```json
+{
+  "response": 0,
+  "species": "setosa",
+  "confidence": 1.0
+}
+```
+
+The confidence field is the classifier's estimated probability for its predicted class, **not a calibrated reliability guarantee**. The value shown is illustrative.
+
+### Batch prediction
+
+`POST /predict/batch`
+
+```json
+{
+  "instances": [
+    {"sepal_length": 5.1, "sepal_width": 3.5, "petal_length": 1.4, "petal_width": 0.2},
+    {"sepal_length": 6.7, "sepal_width": 3.0, "petal_length": 5.2, "petal_width": 2.3}
+  ]
+}
+```
+
+The response includes a `predictions` array with a class ID, species, and confidence per sample, plus a `count` of predictions.
+
+### Model metadata
+
+`GET /model/info` reads `model/model_metadata.json` and reports the model version, algorithm, training timestamp, test metrics, and input features.
+
+### Validation and errors
+
+- The four flower measurements are required and must each be greater than zero.
+- Empty batches and batches larger than 100 are rejected.
+- Invalid input returns HTTP **422**.
+- Missing model metadata returns HTTP **503**.
+- If the trained model is missing, prediction endpoints return HTTP **503**.
+
+## Experiment tracking and reproducibility
+
+- The model-selection metric is **mean 5-fold cross-validation macro F1**.
+- The final accuracy and macro F1 are measured on the held-out test partition.
+- `results/latest_metrics.json` stores the most recent experiment, including model comparisons, test metrics, and the confusion matrix.
+- `results/history.jsonl` keeps one JSON record per training run.
+- `model/model_metadata.json` stores the selected model's description, metrics, and training timestamp.
+- Model loading is cached for serving efficiency; **restart the API after retraining** to load the updated model artifact.
+
+## Automated tests and CI
+
+The pytest suite checks successful predictions, batch responses, invalid/missing input fields, batch limits, model metadata, and failure responses.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on pushes and pull requests and performs:
+
+1. Checkout and Python environment setup.
+2. Dependency installation.
+3. Model training and evaluation.
+4. Automated API tests.
+5. Chart generation and artifact existence checks.
+
+This is **continuous integration**, not a cloud deployment; the API is run locally for this lab.
+
+## Limitations and possible next steps
+
+- Iris is a small educational dataset, not a production-scale benchmark.
+- Probability estimates have not been calibrated.
+- Experiment records are file-based rather than stored in an MLflow tracking server.
+- The API is not deployed publicly and does not implement production monitoring or model-drift detection.
+
+Future improvements could include MLflow, Docker packaging, model registry integration, and deployment monitoring; these are **not required** to reproduce the current lab.
+
+## Attribution
+
+Based on **Ramin Mohammadi's MLOps FastAPI Lab 1**, used as the course starter:
+
+- [Original course repository](https://github.com/raminmohammadi/MLOps/tree/main/Labs/API_Labs/FastAPI_Labs)
+- [Original FastAPI Lab 1 walkthrough](https://www.mlwithramin.com/blog/fastapi-lab1)
+
+This repository adds the model-comparison workflow, experiment tracking, API extensions, tests, CI, and visualizations described above.
