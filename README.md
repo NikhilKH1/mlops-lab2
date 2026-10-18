@@ -137,7 +137,7 @@ mlops-lab2/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/mlops-lab2.git
+git clone https://github.com/NikhilKH1/mlops-lab2.git
 cd mlops-lab2
 python3 -m venv .venv
 source .venv/bin/activate
